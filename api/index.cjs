@@ -97,4 +97,5 @@ app.post('/api/audit_chat', async (req, res) => {
   });
 });
 
+// Vercel Serverless 导出
 module.exports = app;
