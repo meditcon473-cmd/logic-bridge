@@ -1,4 +1,4 @@
-import express from 'express';
+const express = require('express');
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -9,7 +9,6 @@ app.post('/api/sniff', async (req, res) => {
     const { prompt } = req.body;
     console.log('Received sniff request:', prompt);
     
-    // 简单模拟返回
     const types = ['DIALECTICAL', 'PHENOMENON', 'METAPHOR'];
     const randomType = types[Math.floor(Math.random() * types.length)];
     
@@ -98,5 +97,4 @@ app.post('/api/audit_chat', async (req, res) => {
   });
 });
 
-// Vercel Serverless 导出
 module.exports = app;
