@@ -20,8 +20,8 @@ app.use((req, res, next) => {
 const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY || 'your-api-key-here';
 const MINIMAX_BASE_URL = 'https://api.minimax.chat/v1/text/chatcompletion_v2';
 
-// 完整的 System Prompt
-const SYSTEM_PROMPT = `你是一个极其严谨、具备极高文学素养的高中语文作文阅卷专家。你的唯一任务是对用户输入的"高考作文材料"进行【靶标属性】的精准分类。为了确保 0 误差，你必须严格按照以下【四步决策树】进行思考，并参考教官提供的【30道黄金题库】进行特征比对。
+// 完整的分类 System Prompt（已修复）
+const SYSTEM_PROMPT = `你是一个极其严谨、具备极高文学素养的高中语文作文阅卷专家。你的唯一任务是对用户输入的"高考作文材料"进行【靶标属性】的精准分类。为了确保 0 误差，你必须严格按照以下【四步决策树】进行思考，并参考教官提供的【黄金题库】进行特征比对。
 
 ### 🧠 第一部分：四步决策树 (执行逻辑)
 在给出结论前，你必须在心中严格执行以下 4 步：
@@ -30,14 +30,18 @@ const SYSTEM_PROMPT = `你是一个极其严谨、具备极高文学素养的高
 3. **鉴别思辨 (DIALECTICAL)**：如果不是隐喻。材料中是否明确出现了两个或多个相对立、相辅相成、张力与错位的抽象概念？（如：认可度与自身价值、快与慢、客观价值与时代需要）。要求探讨它们的关系？如果是，则【立刻判定为 DIALECTICAL】。
 4. **鉴别现象 (PHENOMENON)**：如果既没有借物喻理，也没有抽象概念的纯粹对比，而是紧扣时代脉搏，直接、客观地白描了当下的某种社会现象、群体心理、具体的新闻事件或宏观时代背景。则【判定为 PHENOMENON】。
 
-### 📚 第二部分：黄金题库 (核心对标语料库)
-请深度对标以下历年高考经典真题的分类与破题逻辑：
+### ⚠️ 重要补充规则：复合题型判断
+- 如果题目同时包含物品隐喻和概念对比（如"地图与指南针"），**必须优先判定为 METAPHOR（隐喻类）**，因为解码意象是破题的第一步。
+- 决策顺序：先做隐喻判断，再做思辨判断，最后才是现象判断。
+
+### 📚 黄金题库 (核心对标语料库)
 
 【类别 1：METAPHOR（隐喻与寓言类）】
 - [围棋]"本手、妙手、俗手" -> 隐喻：基础夯实与创新创造、急功近利之间的关系。
+- [地图与指南针] -> 隐喻：方向与方法、定位与导航、选择与坚守的关系。**必须归类为 METAPHOR**！
 - [二战战机]"幸存者偏差" -> 隐喻：看问题不能停留在表象，需透视本质。
 - [书法]"人"字形描红 -> 隐喻：人的成长规律、相互支撑与动态平衡。
-- [自然物]"大树与小鸟的约定"、"切割钻石"、"猫吃鱼与捉老鼠"、"喂食野生动物"、"乌鸦学老鹰捉羊" -> 隐喻：因循守旧与顺应时代、经验主义与勇气、物质享受与坚守本职、溺爱施舍与独立生存、盲从与自我认知。
+- [自然物]"种子与泥土"、"大树与小鸟的约定"、"切割钻石"、"猫吃鱼与捉老鼠"、"喂食野生动物"、"乌鸦学老鹰捉羊" -> 隐喻：因循守旧与顺应时代、经验主义与勇气、物质享受与坚守本职、溺爱施舍与独立生存、盲从与自我认知。
 - [生活画卷]"奖惩漫画"、"涂抹与底色" -> 隐喻：教育功利主义与唯分数论、人生阅历与青年初心。
 
 【类别 2：DIALECTICAL（二元思辨类）】
@@ -67,6 +71,22 @@ const SYSTEM_PROMPT = `你是一个极其严谨、具备极高文学素养的高
   "confidence": 0.98,
   "reason": "材料以自然界的'种子'在泥土中沉默为表象，隐喻人在逆境中默默蓄力以求最终爆发的过程，属于典型的借物喻理（隐喻类）。"
 }`;
+
+// 苏格拉底对话 System Prompt
+const SOCRATES_SYSTEM_PROMPT = `你是一个犀利、严厉的高中语文苏格拉底式导师。你的任务是通过连珠炮式的反问，引导学生深入思考高考作文的审题立意。
+
+**核心原则：**
+1. 绝不说"好的我明白了"、"你说得对"这类附和学生的话
+2. 如果学生判断错了，用反问逼他们自己发现漏洞
+3. 如果学生判断对了，继续追问核心矛盾和分论点怎么设
+4. 保持严厉但有理有据的风格，像真正的阅卷教官一样一针见血
+5. 每次回复控制在 100-200 字，用短句制造压迫感
+6. 如果学生回答正确，要继续追问"那你怎么展开？"、"分论点是什么？"
+
+**当前讨论背景：**
+学生在进行高考作文"靶标属性分类"的训练。你需要判断他/她的分类是否正确，并引导深入思考。
+
+现在开始你的追问！`;
 
 // Radar sniff API - 使用 MiniMax 进行智能分类
 app.post('/api/sniff', async (req, res) => {
@@ -220,16 +240,88 @@ app.post('/api/ocr', async (req, res) => {
   });
 });
 
-// Audit chat API
+// 真正的苏格拉底对话 API - 已修复
 app.post('/api/audit_chat', async (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      reply: '好的，我明白了。请继续阐述你的观点。',
-      step: '第二轮问答',
-      is_passed: false
+  try {
+    const { messages, currentType } = req.body;
+    console.log('Audit chat request:', messages?.length, 'messages');
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: '请提供对话历史' 
+      });
     }
-  });
+
+    // 构建消息数组，加上系统提示
+    const chatMessages = [
+      { role: 'system', content: SOCRATES_SYSTEM_PROMPT }
+    ];
+
+    // 添加上下文：如果知道当前分类，可以告诉 AI
+    if (currentType) {
+      chatMessages.push({ 
+        role: 'system', 
+        content: `学生当前判断的分类是：${currentType}` 
+      });
+    }
+
+    // 添加用户历史消息
+    for (const msg of messages) {
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        chatMessages.push({
+          role: msg.role === 'assistant' ? 'assistant' : 'user',
+          content: msg.content
+        });
+      }
+    }
+
+    // 调用 MiniMax API
+    const response = await fetch(MINIMAX_BASE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MINIMAX_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'abab6.5s-chat',
+        messages: chatMessages,
+        temperature: 0.7,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('MiniMax chat API error:', errorText);
+      throw new Error(`MiniMax API failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('MiniMax chat response:', result);
+
+    const assistantMessage = result.choices?.[0]?.message?.content || '请继续思考你的判断依据！';
+
+    res.json({
+      success: true,
+      data: {
+        reply: assistantMessage,
+        step: '苏格拉底追问中',
+        is_passed: false
+      }
+    });
+  } catch (error) {
+    console.error('Audit chat error:', error);
+    // 失败时返回严厉的回复
+    res.json({
+      success: true,
+      data: {
+        reply: '你没有回答我的问题！重新说清楚你的判断依据是什么？',
+        step: '追问中',
+        is_passed: false
+      }
+    });
+  }
 });
 
 // Vercel export
