@@ -1194,10 +1194,24 @@
                 };
                 
                 // ========== 点将台方法 ==========
+                const getInitialMessage = () => {
+                    const type = topicType.value;
+                    
+                    if (type === 'metaphor') {
+                        return "同学你好，材料我已阅。这是一道很有意思的题目，里面藏着'密码'。我们先不谈大道理，就看字面意思：请你敏锐地找一找，材料里最核心的【物品/主角】是谁？它在自然界或现实物理世界中，最突出的【特征或作用】是什么？";
+                    } else if (type === 'logic' || type === 'dialectical') {
+                        return "同学你好，材料已阅。这类题目考验的是我们思维的'天平'。请你用最精炼的语言告诉我：这段材料抛出了哪两个看似对立、实则密切相关的【核心概念】？";
+                    } else if (type === 'phenomenon') {
+                        return "同学你好，材料已阅。这道题紧扣着我们当下的时代脉搏。请用你自己的话提炼一下：材料反映了一个什么样的【社会现象或行为趋势】？你认为在这个现象背后，最核心的争议点在哪里？";
+                    } else {
+                        return "同学你好，我是你的专属审题教官。我已经仔细阅读了你的材料。请告诉我，你读完这段材料后，脑海中浮现的第一个核心关键词是什么？";
+                    }
+                };
+                
                 const openAuditTent = () => {
                     showAuditTent.value = true;
                     auditMessages.value = [
-                        { role: 'assistant', content: '【点将台启动】\n\n我是你的审题教官。现在，请告诉我你的命题材料是什么？\n\n【任务】说出材料中最核心的关键词或矛盾点。' }
+                        { role: 'assistant', content: getInitialMessage() }
                     ];
                     auditInput.value = '';
                     auditPassed.value = false;
@@ -1225,6 +1239,7 @@
                             },
                             body: JSON.stringify({
                                 messages: auditMessages.value,
+                                currentType: topicType.value,
                                 material: currentMaterial.value
                             })
                         });
