@@ -72,21 +72,42 @@ const SYSTEM_PROMPT = `你是一个极其严谨、具备极高文学素养的高
   "reason": "材料以自然界的'种子'在泥土中沉默为表象，隐喻人在逆境中默默蓄力以求最终爆发的过程，属于典型的借物喻理（隐喻类）。"
 }`;
 
-// 苏格拉底对话 System Prompt
-const SOCRATES_SYSTEM_PROMPT = `你是一个犀利、严厉的高中语文苏格拉底式导师。你的任务是通过连珠炮式的反问，引导学生深入思考高考作文的审题立意。
+// 生成动态追问策略
+function getDynamicSystemPrompt(currentType) {
+  const typeMap = {
+    'METAPHOR': `你是一个极其严厉的高中语文"苏格拉底式"名师。
+当前学生正在拆解的作文材料类型是：【METAPHOR 隐喻类】
 
-**核心原则：**
-1. 绝不说"好的我明白了"、"你说得对"这类附和学生的话
-2. 如果学生判断错了，用反问逼他们自己发现漏洞
-3. 如果学生判断对了，继续追问核心矛盾和分论点怎么设
-4. 保持严厉但有理有据的风格，像真正的阅卷教官一样一针见血
-5. 每次回复控制在 100-200 字，用短句制造压迫感
-6. 如果学生回答正确，要继续追问"那你怎么展开？"、"分论点是什么？"
+【最高追问纪律】：
+1. 绝对不允许问"矛盾、统一、并列关系"！
+2. 第一轮必须死死咬住"解码"！逼问学生："材料里的 [具体物品/动物/意象] 在现实人生或社会中隐喻（象征）着什么具体的人或事？"
+3. 只有学生解码正确，才能进入下一步问"如何展开"。
 
-**当前讨论背景：**
-学生在进行高考作文"靶标属性分类"的训练。你需要判断他/她的分类是否正确，并引导深入思考。
+【对话风格】：简短、犀利、每次只问 1 个问题，步步紧逼！绝不说废话。`,
 
-现在开始你的追问！`;
+    'DIALECTICAL': `你是一个极其严厉的高中语文"苏格拉底式"名师。
+当前学生正在拆解的作文材料类型是：【DIALECTICAL 思辨类】
+
+【最高追问纪律】：
+1. 重点追问概念之间的张力！逼问学生："这两个概念在什么情况下会对立？在什么情况下能统一或转化？"
+2. 让学生明确说出 A 和 B 的关系后，继续追问："这个关系的本质矛盾在哪里？"
+3. 只有学生说清张力，才能进入下一步。
+
+【对话风格】：简短、犀利、每次只问 1 个问题，步步紧逼！绝不说废话。`,
+
+    'PHENOMENON': `你是一个极其严厉的高中语文"苏格拉底式"名师。
+当前学生正在拆解的作文材料类型是：【PHENOMENON 现象类】
+
+【最高追问纪律】：
+1. 重点追问深度！逼问学生："这个现象背后的根本原因是什么？它反映了怎样的时代痛点或群体心理？"
+2. 让学生从现象挖掘到本质后，继续追问："如果你是决策者，会怎么解决这个现象？"
+3. 只有学生说透本质，才能通过。
+
+【对话风格】：简短、犀利、每次只问 1 个问题，步步紧逼！绝不说废话。`
+  };
+
+  return typeMap[currentType] || typeMap['PHENOMENON'];
+}
 
 // Radar sniff API - 使用 MiniMax 进行智能分类
 app.post('/api/sniff', async (req, res) => {
@@ -240,11 +261,11 @@ app.post('/api/ocr', async (req, res) => {
   });
 });
 
-// 真正的苏格拉底对话 API - 已修复
+// 动态追问策略的苏格拉底对话 API
 app.post('/api/audit_chat', async (req, res) => {
   try {
     const { messages, currentType } = req.body;
-    console.log('Audit chat request:', messages?.length, 'messages');
+    console.log('Audit chat request:', messages?.length, 'messages, type:', currentType);
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ 
@@ -253,18 +274,13 @@ app.post('/api/audit_chat', async (req, res) => {
       });
     }
 
-    // 构建消息数组，加上系统提示
-    const chatMessages = [
-      { role: 'system', content: SOCRATES_SYSTEM_PROMPT }
-    ];
+    // 根据 currentType 动态生成系统提示
+    const dynamicSystemPrompt = getDynamicSystemPrompt(currentType);
 
-    // 添加上下文：如果知道当前分类，可以告诉 AI
-    if (currentType) {
-      chatMessages.push({ 
-        role: 'system', 
-        content: `学生当前判断的分类是：${currentType}` 
-      });
-    }
+    // 构建消息数组
+    const chatMessages = [
+      { role: 'system', content: dynamicSystemPrompt }
+    ];
 
     // 添加用户历史消息
     for (const msg of messages) {
@@ -287,7 +303,7 @@ app.post('/api/audit_chat', async (req, res) => {
         model: 'abab6.5s-chat',
         messages: chatMessages,
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 300
       })
     });
 
@@ -312,11 +328,16 @@ app.post('/api/audit_chat', async (req, res) => {
     });
   } catch (error) {
     console.error('Audit chat error:', error);
-    // 失败时返回严厉的回复
+    // 根据类型返回不同的降级回复
+    const fallbackReplies = {
+      'METAPHOR': '你没有回答我的问题！材料里的物品到底隐喻了什么？快说！',
+      'DIALECTICAL': '概念之间的关系呢？对立还是统一？给我说清楚！',
+      'PHENOMENON': '现象的本质呢？光说表象有什么用？'
+    };
     res.json({
       success: true,
       data: {
-        reply: '你没有回答我的问题！重新说清楚你的判断依据是什么？',
+        reply: fallbackReplies[currentType] || '重新说清楚你的判断依据！',
         step: '追问中',
         is_passed: false
       }
