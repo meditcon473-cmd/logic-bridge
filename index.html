@@ -843,7 +843,7 @@
                     
                     try {
                         const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
-                        const response = await fetch('/grade', {
+                        const response = await fetch('/api/grade', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -940,7 +940,7 @@
                         const timeoutId = setTimeout(() => controller.abort(), 30000);
                         
                         // 先调用OCR接口
-                        const ocrResponse = await fetch('/ocr', {
+                        const ocrResponse = await fetch('/api/ocr', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1002,7 +1002,7 @@
                         // 直接使用左侧战区情报作为审题标准
                         const usedMaterial = currentMaterial.value;
                         
-                        const response = await fetch('/grade', {
+                        const response = await fetch('/api/grade', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1101,7 +1101,7 @@
                     
                     // 同步最新 XP 和等级
                     try {
-                        const res = await fetch('/me', {
+                        const res = await fetch('/api/me', {
                             headers: { 'x-user-id': user.id }
                         });
                         const data = await res.json();
@@ -1130,7 +1130,7 @@
                 // 加载当前任务
                 const loadMission = async () => {
                     try {
-                        const res = await fetch('/mission/active');
+                        const res = await fetch('/api/mission/active');
                         const data = await res.json();
                         if (data.success) {
                             currentMission.value = data.data;
@@ -1217,7 +1217,7 @@
                     
                     try {
                         const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
-                        const response = await fetch('/audit_chat', {
+                        const response = await fetch('/api/audit_chat', {
                             method: 'POST',
                             headers: { 
                                 'Content-Type': 'application/json',
@@ -1298,7 +1298,7 @@
 
                     try {
                         const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
-                        const response = await fetch('/sniff', {
+                        const response = await fetch('/api/sniff', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
                             body: JSON.stringify({ prompt: inputText })
@@ -1384,7 +1384,7 @@ const submitArgument = async () => {
                     
                     try {
                         // 调用后端 API（后端会调用 MiniMax 并记录日志）
-                        const response = await fetch('/combat', {
+                        const response = await fetch('/api/combat', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1416,7 +1416,7 @@ const submitArgument = async () => {
                             add(`✅ 判定通过: ${feedback.feedback || '优秀！'}`, 's');
                             
                             // 重新获取用户最新 XP
-                            const meRes = await fetch('/me', {
+                            const meRes = await fetch('/api/me', {
                                 headers: { 'x-user-id': user.id }
                             });
                             const meData = await meRes.json();
