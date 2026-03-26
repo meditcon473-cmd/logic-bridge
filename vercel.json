@@ -1,7 +1,7 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/sniff", "destination": "/api/sniff.js" },
+    { "source": "/api/sniff", "destination": "/api/sniff.ts" },
     { "source": "/api/(.*)", "destination": "/api/index.cjs" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
