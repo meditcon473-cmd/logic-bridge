@@ -7,6 +7,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        /* 雷达垂直扫描线动画 */
+        @keyframes scanVertical { 
+            0% { transform: translateY(-100%); } 
+            100% { transform: translateY(100%); } 
+        }
+        .radar-scanline { 
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 20%;
+            background: linear-gradient(to bottom, transparent, rgba(0,240,255,0.6), transparent);
+            animation: scanVertical 2s linear infinite;
+            z-index: 10;
+        }
         :root { --cyber-blue: #00f0ff; --cyber-orange: #ff6b00; --cyber-purple: #a855f7; }
         body { background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%); min-height: 100vh; font-family: 'Microsoft YaHei', sans-serif; overflow: hidden; margin:0; }
         [v-cloak] { display: none; }
@@ -107,6 +121,21 @@
         .connect-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,240,255,0.3); }
         
         /* ===== 赛博朋克美化样式 ===== */
+
+        /* 新增：雷达垂直扫描线动画 */
+        @keyframes scanVertical { 
+            0% { transform: translateY(-100%); } 
+            100% { transform: translateY(100%); } 
+        }
+        .radar-scanline { 
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 20%;
+            background: linear-gradient(to bottom, transparent, rgba(0,240,255,0.6), transparent);
+            animation: scanVertical 2s linear infinite;
+            z-index: 10;
+        }
         
         /* 顶部驾驶舱 - 磨砂玻璃 */
         .header-glass {
@@ -197,6 +226,8 @@
             <div class="w-1/4">
                 <div class="glass rounded-2xl h-full p-5 flex flex-col">
                     <h2 class="text-xl font-bold neon-blue mb-4"><i class="fas fa-crosshairs"></i> 战区情报</h2>
+
+                    
                     
                     <!-- 关卡切换 -->
                     <div class="flex gap-2 mb-4 flex-wrap">
@@ -219,41 +250,47 @@
                         <span class="text-xs text-cyan-500 animate-pulse"><i class="fas fa-unlock mr-1"></i>自由实战模式</span>
                     </div>
                     <textarea v-model="currentMaterial" 
-                        placeholder="请在此粘贴你要训练的高考作文材料或题目..."
-                        class="bg-black/50 rounded-lg p-4 text-sm text-gray-200 mt-2 flex-1 w-full resize-none border border-gray-700 focus:border-cyan-400"
-                        style="min-height: 120px;">
+                        placeholder="请在此粘贴你要训练的高考作文材料或题目，然后点击上方雷达进行【靶标属性解析】..."
+                        class="bg-black/50 rounded-lg p-4 text-sm text-gray-200 mt-2 flex-1 w-full resize-none border border-gray-700 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all"
+                        style="min-height: 150px;">
                     </textarea>
                     
-                    <!-- AI 嗅探触发按钮 -->
+                    <!-- 唯一的 AI 嗅探触发按钮 -->
                     <button @click="triggerRadarScan" :disabled="!currentMaterial.trim() || isScanning"
                         class="w-full mt-3 mb-4 py-3 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2"
-                        :class="!currentMaterial.trim() || isScanning ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border border-cyan-400/50'">
+                        :class="!currentMaterial.trim() || isScanning ? 'bg-gray-800 text-gray-600 border border-gray-700 cursor-not-allowed' : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-400/50'">
                         <i class="fas" :class="isScanning ? 'fa-spinner fa-spin' : 'fa-robot'"></i>
-                        {{ isScanning ? 'AI 教官解析中...' : '🚀 提交材料请求 AI 嗅探' }}
+                        {{ isScanning ? 'AI 教官深度解析中...' : '🚀 提交材料，请求 AI 智能嗅探' }}
                     </button>
                     
-                    <!-- 指示灯 -->
-                    <div class="mb-4 bg-black/60 border border-cyan-500/30 rounded-xl p-3 pointer-events-none">
-                        <div class="text-xs text-cyan-400 mb-2 flex justify-between">
-                            <span><i class="fas fa-satellite-dish"></i> 靶标属性指示灯</span>
-                            <span>{{ scanProgress }}%</span>
+                    <!-- 靶标属性解析指示灯（纯展示，禁止点击） -->
+                    <div class="mb-4 bg-black/60 border border-cyan-500/30 rounded-xl p-3 relative overflow-hidden pointer-events-none">
+                        <div v-if="isScanning" class="radar-scanline"></div>
+
+                        <div class="text-xs text-cyan-400 mb-2 font-bold flex justify-between items-center">
+                            <span><i class="fas fa-satellite-dish" :class="{'animate-pulse': isScanning}"></i> 靶标属性解析指示灯</span>
+                            <span class="text-gray-500 font-mono">{{ scanProgress }}%</span>
                         </div>
-                        <div class="flex justify-between gap-2">
-                            <div class="flex-1 py-2 rounded-lg border text-center" :class="topicType==='logic'?'bg-purple-900/40 border-purple-500':'bg-gray-800/40 border-gray-700'">
-                                <span class="text-[10px]" :class="topicType==='logic'?'text-purple-300':'text-gray-500'">思辨型</span>
+
+                        <div class="flex justify-between gap-2 relative z-20">
+                            <div class="flex-1 flex flex-col items-center justify-center py-2 rounded-lg border transition-all duration-300"
+                                 :class="topicType === 'logic' ? 'bg-purple-900/40 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]' : 'bg-gray-800/40 border-gray-700'">
+                                <i class="fas fa-brain mb-1" :class="topicType === 'logic' ? 'text-purple-400 animate-pulse' : 'text-gray-600'"></i>
+                                <span class="text-[10px]" :class="topicType === 'logic' ? 'text-purple-300 font-bold' : 'text-gray-500'">思辨型矩阵</span>
                             </div>
-                            <div class="flex-1 py-2 rounded-lg border text-center" :class="topicType==='phenomenon'?'bg-cyan-900/40 border-cyan-500':'bg-gray-800/40 border-gray-700'">
-                                <span class="text-[10px]" :class="topicType==='phenomenon'?'text-cyan-300':'text-gray-500'">现象型</span>
+
+                            <div class="flex-1 flex flex-col items-center justify-center py-2 rounded-lg border transition-all duration-300"
+                                 :class="topicType === 'phenomenon' ? 'bg-cyan-900/40 border-cyan-500 shadow-[0_0_15px_rgba(0,240,255,0.5)]' : 'bg-gray-800/40 border-gray-700'">
+                                <i class="fas fa-city mb-1" :class="topicType === 'phenomenon' ? 'text-cyan-400 animate-pulse' : 'text-gray-600'"></i>
+                                <span class="text-[10px]" :class="topicType === 'phenomenon' ? 'text-cyan-300 font-bold' : 'text-gray-500'">现象型矩阵</span>
                             </div>
-                            <div class="flex-1 py-2 rounded-lg border text-center" :class="topicType==='metaphor'?'bg-green-900/40 border-green-500':'bg-gray-800/40 border-gray-700'">
-                                <span class="text-[10px]" :class="topicType==='metaphor'?'text-green-300':'text-gray-500'">隐喻型</span>
+
+                            <div class="flex-1 flex flex-col items-center justify-center py-2 rounded-lg border transition-all duration-300"
+                                 :class="topicType === 'metaphor' ? 'bg-green-900/40 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-gray-800/40 border-gray-700'">
+                                <i class="fas fa-seedling mb-1" :class="topicType === 'metaphor' ? 'text-green-400 animate-pulse' : 'text-gray-600'"></i>
+                                <span class="text-[10px]" :class="topicType === 'metaphor' ? 'text-green-300 font-bold' : 'text-gray-500'">隐喻型矩阵</span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <div class="text-sm text-gray-400">📏 字数要求</div>
-                        <div class="text-cyan-400">{{ charCount }}/{{ currentStage===1?50:currentStage===2?150:currentStage===3?80:currentStage===4?60:currentStage===5?200:currentStage===6?100:currentStage===7?150:20 }} 字 <span class="text-xs text-gray-500" v-if="currentStage===5">(本关底线：150字以上)</span><span class="text-xs text-gray-500" v-else-if="currentStage===6">(精准凤头：100字左右)</span><span class="text-xs text-gray-500" v-else-if="currentStage===7">(建议80-150字)</span><span class="text-xs text-gray-500" v-else-if="currentStage===8">(建议8-16字)</span><span class="text-xs text-gray-500" v-else>(建议50字以上)</span></div>
                     </div>
                 </div>
             </div>
@@ -334,6 +371,26 @@
                         </div>
                     </div>
                     
+                    <!-- 动态启发引导面板 -->
+                    <div v-if="topicType && currentStage !== 0" class="mb-4 bg-black/50 border rounded-lg p-4 transition-all duration-500 shadow-lg"
+                     :class="topicType === 'logic' ? 'border-purple-500/50 shadow-purple-900/20' : topicType === 'phenomenon' ? 'border-cyan-500/50 shadow-cyan-900/20' : 'border-green-500/50 shadow-green-900/20'">
+                        <div class="text-sm font-bold flex items-center gap-2 mb-2" 
+                         :class="topicType === 'logic' ? 'text-purple-400' : topicType === 'phenomenon' ? 'text-cyan-400' : 'text-green-400'">
+                            <i class="fas fa-lightbulb animate-pulse"></i> 核心写作法则导引
+                        </div>
+                        <div class="text-xs text-gray-300 leading-relaxed">
+                            <template v-if="topicType === 'logic'">
+                                <span class="text-purple-300 font-bold">【思辨类】</span> 请界定核心概念，剖析二者之间的张力与二元对立关系。在论证中必须运用"让步+反转"，推演出逻辑的深度，切忌单向度说理。
+                            </template>
+                            <template v-if="topicType === 'phenomenon'">
+                                <span class="text-cyan-300 font-bold">【现象类】</span> 严禁就事论事！必须剥离现象表皮（是什么），深挖这种社会症候背后的本质病理与底层逻辑（为什么），并给出你的认知处方。
+                            </template>
+                            <template v-if="topicType === 'metaphor'">
+                                <span class="text-green-300 font-bold">【隐喻类】</span> 破题第一步必须精准映射！将材料中的"喻体"准确翻译并转化为现实生活中的"本体"，围绕本体的象征意义展开核心论证。
+                            </template>
+                        </div>
+                    </div>
+
                     <!-- 普通关卡输入区 -->
                     <div v-else class="flex-1 relative">
                         <textarea v-model="userInput" :maxlength="currentStage===1?50:currentStage===2?150:currentStage===3?80:currentStage===4?60:currentStage===5?500:currentStage===6?150:currentStage===7?200:20"
@@ -723,6 +780,11 @@
         createApp({
             setup(){
                 const level=ref(1),xp=ref(0),userInput=ref(''),submitting=ref(false);
+                
+                // 雷达系统相关
+                const isScanning = ref(false);
+                const scanProgress = ref(0);
+                const topicType = ref(null);
                 const currentStage=ref(1);
                 const isCommanderActive=ref(false);
                 const commanderText=ref('');
@@ -780,7 +842,7 @@
                     const usedMaterial = currentMaterial.value;
                     
                     try {
-                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试学员"}');
+                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
                         const response = await fetch('/api/grade', {
                             method: 'POST',
                             headers: {
@@ -873,7 +935,7 @@
                         // 步骤2: OCR识别（只识别文字，不评分）
                         add('🔍 [30%] 正在高精度字迹解析...', 'i');
                         
-                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试学员"}');
+                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 30000);
                         
@@ -936,7 +998,7 @@
                     add('🚀 正在召唤名师进行全息智能阅卷...', 'i');
                     
                     try {
-                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试学员"}');
+                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
                         // 直接使用左侧战区情报作为审题标准
                         const usedMaterial = currentMaterial.value;
                         
@@ -1030,8 +1092,8 @@
                 
                 // 检查登录并加载用户信息
                 const checkLogin = async () => {
-                    const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试学员"}');
-                    // if (!user.id) {
+                    const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
+                    if (!user.id) {
                         // window.location.href = '/login';
                         return;
                     }
@@ -1080,6 +1142,7 @@
                 };
                 loadMission();
                 
+                // 让 currentMaterial 变成可自由编辑的 ref，默认为空
                 const currentMaterial = ref('');
                 const currentTask = computed(() => {
                     if (currentStage.value === 1) return currentMission.value.task_stage_1;
@@ -1153,7 +1216,7 @@
                     auditLoading.value = true;
                     
                     try {
-                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试学员"}');
+                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
                         const response = await fetch('/api/audit_chat', {
                             method: 'POST',
                             headers: { 
@@ -1212,7 +1275,71 @@
                 };
                 
                 // ========== 提交审核（调用后端 API）==========
-                const submitArgument = async () => {
+                
+                // 模拟雷达扫描的函数
+                // 触发真实的雷达嗅探请求
+                const triggerRadarScan = async (targetType) => {
+                    // 优先使用用户输入的题目，若无则使用当前材料
+                    const inputText = userInput.value.trim() || currentMaterial.value;
+                    if (!inputText) {
+                        showAlert('⚠️ 请先输入题目或提供材料！', 'error');
+                        return;
+                    }
+
+                    isScanning.value = true;
+                    scanProgress.value = 0;
+                    topicType.value = null;
+                    add('📡 雷达系统启动，请求中枢 SnifferNode 嗅探靶标...', 'i');
+
+                    // 模拟前端扫描进度条视觉效果
+                    const progressInterval = setInterval(() => {
+                        if (scanProgress.value < 85) scanProgress.value += Math.floor(Math.random() * 10) + 5;
+                    }, 200);
+
+                    try {
+                        const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
+                        const response = await fetch('http://localhost:3001/api/sniff', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
+                            body: JSON.stringify({ prompt: inputText })
+                        });
+
+                        const result = await response.json();
+                        clearInterval(progressInterval);
+                        scanProgress.value = 100;
+
+                        if (result.success && result.data) {
+                            const engineType = result.data.type;
+
+                            // 防呆机制：如果后端判定未知，拦截并要求澄清
+                            if (engineType === 'UNKNOWN' || result.data.clarification_needed) {
+                                isScanning.value = false;
+                                showAlert('⚠️ 靶标模糊！请在中军大帐补充具体切入点', 'error');
+                                add('❌ 靶标模糊，嗅探失败，请求驾驶员澄清。', 'e');
+                                return; // 终止，不解锁题型
+                            }
+
+                            // 将后端的大写枚举映射为前端 UI 识别的变量
+                            const typeMap = { 'DIALECTICAL': 'logic', 'PHENOMENON': 'phenomenon', 'METAPHOR': 'metaphor' };
+                            topicType.value = typeMap[engineType];
+
+                            const typeName = engineType === 'DIALECTICAL' ? '思辨型' : engineType === 'PHENOMENON' ? '现象型' : '隐喻型';
+                            add(`🎯 嗅探完毕：锁定为【${typeName}】矩阵！底层启发引擎已切换。`, 's');
+                            showAlert(`🎯 靶标锁定：${typeName}`, 'success');
+                        } else {
+                            throw new Error(result.error || '嗅探节点解析失败');
+                        }
+                    } catch (error) {
+                        clearInterval(progressInterval);
+                        scanProgress.value = 0;
+                        add(`❌ 雷达通信故障: ${error.message}`, 'e');
+                        showAlert('❌ 雷达通信故障', 'error');
+                    }
+
+                    setTimeout(() => { isScanning.value = false; }, 500);
+                };
+                
+const submitArgument = async () => {
                     if (!userInput.value.trim() || submitting.value) return;
                     
                     // 第一关字数前置校验
@@ -1243,8 +1370,8 @@
                     }
                     
                     // 检查登录状态
-                    const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试学员"}');
-                    // if (!user.id) {
+                    const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
+                    if (!user.id) {
                         showAlert('请先登录！', 'error');
                         // window.location.href = '/login';
                         return;
@@ -1390,41 +1517,8 @@
                 
                 const clearInput=()=>{userInput.value='';add('输入框已清空','i')};
                 
-                // 雷达嗅探函数
-                const triggerRadarScan = async () => {
-                    if (!currentMaterial.value.trim()) return;
-                    isScanning.value = true;
-                    scanProgress.value = 0;
-                    topicType.value = null;
-                    add('📡 雷达启动，AI 正在解析...', 'i');
-                    
-                    const interval = setInterval(() => {
-                        if (scanProgress.value < 90) scanProgress.value += Math.floor(Math.random() * 15) + 5;
-                    }, 150);
-                    
-                    try {
-                        const res = await fetch('/api/sniff', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({prompt: currentMaterial.value})
-                        });
-                        const data = await res.json();
-                        clearInterval(interval);
-                        scanProgress.value = 100;
-                        
-                        if (data.success && data.data) {
-                            const map = {'DIALECTICAL': 'logic', 'PHENOMENON': 'phenomenon', 'METAPHOR': 'metaphor'};
-                            topicType.value = map[data.data.type] || null;
-                            const typeName = data.data.type === 'DIALECTICAL' ? '思辨型' : data.data.type === 'PHENOMENON' ? '现象型' : '隐喻型';
-                            add('🎯 解析完成：' + typeName, 's');
-                        }
-                    } catch (e) {
-                        add('❌ 雷达故障: ' + e.message, 'e');
-                    }
-                    setTimeout(() => { isScanning.value = false; }, 1000);
-                };
-                
                 return{
+                    isScanning, scanProgress, topicType, triggerRadarScan,
                     level,xp,userInput,charCount,submitting,currentStage,currentMaterial,currentTask,
                     isCommanderActive,commanderText,centerAlert,generals,msgs,submitArgument,clearInput,insertConnective,
                     currentUser, logout, highlightKeywords, showAssembly,
