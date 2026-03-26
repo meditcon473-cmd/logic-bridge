@@ -1,4 +1,5 @@
-const express = require('express');
+import express from 'express';
+
 const app = express();
 
 // Middleware
@@ -106,5 +107,5 @@ app.post('/api/audit_chat', async (req, res) => {
   });
 });
 
-// Vercel export - NOT app.listen!
-module.exports = app;
+// Vercel export
+export default app;
