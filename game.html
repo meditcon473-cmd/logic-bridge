@@ -223,7 +223,7 @@
         
         <div class="flex h-screen p-4 gap-4">
             <!-- 左侧 -->
-            <div class="w-1/4">
+            <div class="w-1/4 overflow-y-auto">
                 <div class="glass rounded-2xl h-full p-5 flex flex-col">
                     <h2 class="text-xl font-bold neon-blue mb-4"><i class="fas fa-crosshairs"></i> 战区情报</h2>
 
@@ -1298,7 +1298,7 @@
 
                     try {
                         const user = JSON.parse(localStorage.getItem('user') || '{"id":1,"real_name":"测试"}');
-                        const response = await fetch('http://localhost:3001/api/sniff', {
+                        const response = await fetch('/api/sniff', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
                             body: JSON.stringify({ prompt: inputText })
