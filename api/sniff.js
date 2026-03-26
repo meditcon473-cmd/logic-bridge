@@ -5,19 +5,21 @@ module.exports = (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-id');
   
   if (req.method === 'OPTIONS') {
-    return res.status(200).send('OK');
+    res.status(200).send('OK');
+    return;
   }
 
-  // 解析 path
-  const url = req.url.split('?')[0];
-  console.log('API request:', req.method, url);
+  // 使用 Vercel 提供的 query 参数
+  const url = req.url;
+  console.log('Sniff API called:', req.method, url);
 
-  if (url === '/api/sniff' && req.method === 'POST') {
+  if (req.method === 'POST') {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
         const { prompt } = JSON.parse(body);
+        console.log('Prompt:', prompt);
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({
           success: true,
