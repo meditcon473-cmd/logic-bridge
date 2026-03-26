@@ -1,4 +1,4 @@
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
@@ -9,26 +9,27 @@ module.exports = (req, res) => {
     return;
   }
 
-  // 使用 Vercel 提供的 query 参数
-  const url = req.url;
-  console.log('Sniff API called:', req.method, url);
+  console.log('Sniff API called:', req.method, req.url);
 
   if (req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { prompt } = JSON.parse(body);
-        console.log('Prompt:', prompt);
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({
-          success: true,
-          data: { type: 'DIALECTICAL', confidence: 0.85 }
-        }));
-      } catch (e) {
-        res.status(500).json({ success: false, error: e.message });
+    try {
+      const buffers = [];
+      for await (const chunk of req) {
+        buffers.push(chunk);
       }
-    });
+      const body = Buffer.concat(buffers).toString();
+      const { prompt } = JSON.parse(body);
+      console.log('Prompt received:', prompt);
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({
+        success: true,
+        data: { type: 'DIALECTICAL', confidence: 0.85 }
+      }));
+    } catch (e) {
+      console.error('Error:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
     return;
   }
 
