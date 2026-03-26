@@ -1,30 +1,31 @@
-// Vercel Serverless 格式 - 不使用 Express，直接导出 handler
 module.exports = async (req, res) => {
-  // CORS 头
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-id');
   
   if (req.method === 'OPTIONS') {
-    return res.status(200).send('OK');
+    res.status(200).send('OK');
+    return;
   }
 
-  const path = req.url || '/';
-  console.log('Request:', req.method, path);
+  // Vercel rewrites 会把 /api/xxx 转成 /xxx
+  const path = req.url?.split('?')[0] || '/';
+  console.log('API Request:', req.method, path);
 
-  // 雷达嗅探接口
-  if (path === '/api/sniff' && req.method === 'POST') {
+  // 雷达嗅探 - Vercel 转发后 path 是 /sniff
+  if (path === '/sniff' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
         const { prompt } = JSON.parse(body);
-        const types = ['DIALECTICAL', 'PHENOMENON', 'METAPHOR'];
-        const randomType = types[Math.floor(Math.random() * types.length)];
+        console.log('Prompt:', prompt);
+        
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({
           success: true,
-          data: { type: randomType, confidence: 0.85 }
+          data: { type: 'DIALECTICAL', confidence: 0.85 }
         }));
       } catch (e) {
         res.status(500).json({ success: false, error: e.message });
@@ -34,7 +35,7 @@ module.exports = async (req, res) => {
   }
 
   // 评分接口
-  if (path === '/api/grade' && req.method === 'POST') {
+  if (path === '/grade' && req.method === 'POST') {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({
       success: true,
@@ -53,8 +54,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 用户信息接口
-  if (path === '/api/me' && req.method === 'GET') {
+  // 用户信息
+  if (path === '/me' && req.method === 'GET') {
     const userId = req.headers['x-user-id'] || '1';
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({
@@ -65,7 +66,7 @@ module.exports = async (req, res) => {
   }
 
   // 任务接口
-  if (path === '/api/mission/active' && req.method === 'GET') {
+  if (path === '/mission/active' && req.method === 'GET') {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({
       success: true,
@@ -82,8 +83,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 战斗提交接口
-  if (path === '/api/combat' && req.method === 'POST') {
+  // 战斗提交
+  if (path === '/combat' && req.method === 'POST') {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({
       success: true,
@@ -93,8 +94,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // OCR 接口
-  if (path === '/api/ocr' && req.method === 'POST') {
+  // OCR
+  if (path === '/ocr' && req.method === 'POST') {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({
       success: true,
@@ -103,8 +104,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 审核聊天接口
-  if (path === '/api/audit_chat' && req.method === 'POST') {
+  // 审核聊天
+  if (path === '/audit_chat' && req.method === 'POST') {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({
       success: true,
@@ -117,6 +118,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 默认返回 404
+  // 404
   res.status(404).end('Not Found');
 };
